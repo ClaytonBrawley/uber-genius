@@ -1,0 +1,6 @@
+@UberGenius.Api_HostAddress = http://localhost:5269
+
+GET {{UberGenius.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
