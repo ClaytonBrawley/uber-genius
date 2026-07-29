@@ -1,8 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using UberGenius.Api.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("UberGenius")));
 
 var app = builder.Build();
 
@@ -13,6 +19,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapGet("/health/db", async (AppDbContext db) =>
+    await db.Database.CanConnectAsync() ? Results.Ok("connected") : Results.StatusCode(503));
 
 var summaries = new[]
 {
