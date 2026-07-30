@@ -6,6 +6,7 @@ public record TripPaymentMatchStatistics(
     int TripsConfidentMatch,
     int TripsApproximateMatch,
     int TripsUnmatched,
+    int TripsCancelled,
     int PaymentGroupsMatched,
     int PaymentGroupsUnmatched);
 
@@ -95,12 +96,22 @@ public static class TripPaymentMatcher
         foreach (var trip in trips.Where(t => t.EarningsMatchQuality == PaymentMatchQuality.Unmatched))
         {
             trip.Earnings = 0m;
+
+            // Reclassify: a cancelled trip with no payment record is expected (no fare/fee
+            // was ever charged), not a matching gap. Match on Status containing "cancel"
+            // rather than the exact rider_canceled/driver_canceled strings — robust to
+            // minor format variation. Genuinely unexplained non-matches stay Unmatched.
+            if (trip.Status?.Contains("cancel", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                trip.EarningsMatchQuality = PaymentMatchQuality.Cancelled;
+            }
         }
 
         return new TripPaymentMatchStatistics(
             TripsConfidentMatch: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Confident),
             TripsApproximateMatch: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Approximate),
             TripsUnmatched: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Unmatched),
+            TripsCancelled: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Cancelled),
             PaymentGroupsMatched: matchedGroups.Count,
             PaymentGroupsUnmatched: paymentGroups.Count - matchedGroups.Count);
     }

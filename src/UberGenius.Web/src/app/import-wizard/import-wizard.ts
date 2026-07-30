@@ -18,6 +18,7 @@ interface TripPaymentMatchStatistics {
   tripsConfidentMatch: number;
   tripsApproximateMatch: number;
   tripsUnmatched: number;
+  tripsCancelled: number;
   paymentGroupsMatched: number;
   paymentGroupsUnmatched: number;
 }

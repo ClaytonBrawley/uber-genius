@@ -7,6 +7,10 @@ public enum PaymentMatchQuality
     Unmatched = 0,
     Approximate = 1,
     Confident = 2,
+    // A trip that never matched a payment, but whose Status indicates it was cancelled —
+    // expected (no fare/fee was ever charged), not a matching gap. Distinct from Unmatched
+    // so that bucket stays a clean signal for genuinely unexplained non-matches.
+    Cancelled = 3,
 }
 
 public class Trip
