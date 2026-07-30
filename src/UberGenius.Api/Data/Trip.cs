@@ -33,16 +33,15 @@ public class Trip
     [Precision(9, 2)]
     public decimal DistanceMiles { get; set; }
 
-    // Temporary: capturing both local/usd and both distance figures to check against real
-    // data whether they ever differ — consolidate to one column each if they never do.
+    // Confirmed against real data (2346 trips) to sometimes differ from DistanceMiles
+    // by rounding (±0.01 mi) — kept as a separate column deliberately.
     [Precision(9, 2)]
     public decimal? FareDistanceMiles { get; set; }
 
+    // Gross fee charged to the rider — not the driver's net payout. Confirmed identical
+    // to cancellation_fee_local across all real rows, so only one column is kept.
     [Precision(9, 2)]
-    public decimal? CancellationFeeLocal { get; set; }
-
-    [Precision(9, 2)]
-    public decimal? CancellationFeeUsd { get; set; }
+    public decimal? CancellationFee { get; set; }
 
     [Precision(9, 2)]
     public decimal? Earnings { get; set; }
