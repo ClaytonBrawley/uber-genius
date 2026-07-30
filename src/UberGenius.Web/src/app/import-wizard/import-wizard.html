@@ -1,0 +1,84 @@
+<section class="import-wizard">
+  <h2>Import Uber Data</h2>
+  <p>Upload each file in order. All four are required before you can submit.</p>
+
+  <ol class="steps">
+    @for (step of steps(); track step.category; let i = $index) {
+      <li
+        class="step"
+        [class.valid]="step.status === 'valid'"
+        [class.invalid]="step.status === 'invalid'"
+        [class.locked]="!isUnlocked(i)"
+      >
+        <div class="step-header">
+          <span class="step-number">{{ i + 1 }}</span>
+          <span class="step-label">{{ step.label }}</span>
+          @if (step.status === 'valid') {
+            <span class="checkmark">✓</span>
+          }
+          @if (step.status === 'validating') {
+            <span class="validating">Validating…</span>
+          }
+        </div>
+
+        <input type="file" accept=".csv" [disabled]="!isUnlocked(i)" (change)="onFileSelected(i, $event)" />
+
+        @if (step.result; as r) {
+          @if (!r.succeeded) {
+            <p class="error">{{ r.error }}</p>
+          }
+          @if (r.rowErrors.length > 0) {
+            <details>
+              <summary>{{ r.rowErrors.length }} row error(s)</summary>
+              <ul>
+                @for (e of r.rowErrors; track e) {
+                  <li>{{ e }}</li>
+                }
+              </ul>
+            </details>
+          }
+          <details class="diagnostics">
+            <summary>Headers found / column mapping</summary>
+            <p>Rows read: {{ r.rowsRead }}, imported: {{ r.rowsImported }}</p>
+            <ul>
+              @for (entry of mappingEntries(r.columnMapping); track entry[0]) {
+                <li>{{ entry[0] }} → {{ entry[1] }}</li>
+              }
+            </ul>
+          </details>
+        } @else if (step.status === 'invalid') {
+          <p class="error">Upload failed — check the file and try again.</p>
+        }
+      </li>
+    }
+  </ol>
+
+  <button type="button" (click)="submit()" [disabled]="!allValid() || submitting()">
+    {{ submitting() ? 'Submitting…' : 'Submit All' }}
+  </button>
+
+  @if (submitError()) {
+    <p class="error">{{ submitError() }}</p>
+  }
+
+  @if (submitResult(); as result) {
+    <div class="submit-result" [class.failed]="!result.succeeded">
+      @if (!result.succeeded) {
+        <p class="error">{{ result.error }}</p>
+      }
+      @if (result.succeeded) {
+        <p>Trips imported: {{ result.tripsImported }}</p>
+        <p>Payment rows imported: {{ result.paymentRowsImported }}</p>
+        <p>App Analytics events imported: {{ result.appAnalyticsEventsImported }}</p>
+        @if (result.matchStatistics; as stats) {
+          <h3>Earnings match quality</h3>
+          <ul>
+            <li>Confident matches: {{ stats.tripsConfidentMatch }}</li>
+            <li>Approximate matches: {{ stats.tripsApproximateMatch }}</li>
+            <li>Unmatched: {{ stats.tripsUnmatched }}</li>
+          </ul>
+        }
+      }
+    </div>
+  }
+</section>
