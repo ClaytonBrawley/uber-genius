@@ -47,7 +47,10 @@ public static class TripPaymentMatcher
             {
                 foreach (var group in cityGroups)
                 {
-                    var delta = Math.Abs((group.AnchorTime - trip.EndTime).TotalMinutes);
+                    // Payments only has a local timestamp, so the comparison needs a
+                    // like-for-like local anchor on the Trip side, not the canonical UTC time.
+                    var tripAnchor = trip.EndTimeLocalForMatching ?? trip.EndTimeUtc;
+                    var delta = Math.Abs((group.AnchorTime - tripAnchor).TotalMinutes);
                     if (delta <= MaxToleranceMinutes)
                     {
                         candidates.Add((trip, group, delta));

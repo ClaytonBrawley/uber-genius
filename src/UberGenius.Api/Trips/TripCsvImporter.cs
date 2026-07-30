@@ -11,10 +11,17 @@ public static class TripCsvImporter
 {
     private static readonly Dictionary<string, string[]> FieldAliases = new()
     {
-        // More specific aliases listed before vaguer ones (e.g. actual pickup time
-        // before "requested" time) since MapFields takes the first matching alias.
-        ["StartTime"] = ["begintrip_timestamp_local", "trip start time", "start time", "begin trip time", "pickup time"],
-        ["EndTime"] = ["dropoff_timestamp_local", "trip end time", "end time", "dropoff time", "trip completed"],
+        // UTC columns are the canonical stored values (best practice: store UTC, localize
+        // for display). More specific aliases listed before vaguer ones since MapFields
+        // takes the first matching alias.
+        ["StartTime"] = ["begintrip_timestamp_utc", "trip start time", "start time", "begin trip time", "pickup time"],
+        ["EndTime"] = ["dropoff_timestamp_utc", "trip end time", "end time", "dropoff time", "trip completed"],
+        ["RequestedTime"] = ["request_timestamp_utc", "trip requested", "request time"],
+        // Local counterparts are only used internally to compare against Payments'
+        // Local Timestamp (which has no UTC equivalent) — never persisted as-is.
+        ["StartTimeLocal"] = ["begintrip_timestamp_local"],
+        ["EndTimeLocal"] = ["dropoff_timestamp_local"],
+        ["RequestedTimeLocal"] = ["request_timestamp_local"],
         ["City"] = ["city_name", "city"],
         ["PickupLocation"] = ["pickup address", "pickup location", "origin", "pickup"],
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
@@ -67,11 +74,20 @@ public static class TripCsvImporter
 
     private static Trip BuildTrip(CsvReader csv, Dictionary<string, string> mapping)
     {
-        var startTime = CsvHeaderMapper.ParseDateTime(csv.GetField(mapping["StartTime"]), "start time");
+        DateTime? GetTime(string field) =>
+            mapping.TryGetValue(field, out var header) ? CsvHeaderMapper.TryParseDateTime(csv.GetField(header)) : null;
 
-        var endTime = mapping.TryGetValue("EndTime", out var endHeader)
-            ? CsvHeaderMapper.TryParseDateTime(csv.GetField(endHeader)) ?? startTime
-            : startTime;
+        var requestedTimeUtc = GetTime("RequestedTime");
+
+        // Cancelled trips never begin, so begintrip_timestamp_utc is blank — fall back to
+        // the request time as the best available anchor rather than failing the whole row.
+        var startTimeUtc = GetTime("StartTime") ?? requestedTimeUtc
+            ?? throw new FormatException("Could not determine a start time (begin-trip and request time are both missing).");
+
+        var endTimeUtc = GetTime("EndTime") ?? startTimeUtc;
+
+        // Best-effort local anchor for the Payments join only — never persisted.
+        var endTimeLocal = GetTime("EndTimeLocal") ?? GetTime("StartTimeLocal") ?? GetTime("RequestedTimeLocal");
 
         var distance = mapping.TryGetValue("DistanceMiles", out var distHeader)
             ? CsvHeaderMapper.TryParseDecimal(csv.GetField(distHeader)) ?? 0m
@@ -79,8 +95,10 @@ public static class TripCsvImporter
 
         return new Trip
         {
-            StartTime = startTime,
-            EndTime = endTime,
+            RequestedTimeUtc = requestedTimeUtc,
+            StartTimeUtc = startTimeUtc,
+            EndTimeUtc = endTimeUtc,
+            EndTimeLocalForMatching = endTimeLocal,
             DistanceMiles = distance,
             City = mapping.TryGetValue("City", out var cityHeader) ? csv.GetField(cityHeader) : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)

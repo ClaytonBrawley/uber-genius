@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace UberGenius.Api.Data;
 
@@ -13,8 +14,17 @@ public class Trip
 {
     public int Id { get; set; }
 
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
+    // All times are stored in UTC; convert to local only for display. RequestedTimeUtc is
+    // null only if the file has no request-time column at all — every real row should have one.
+    public DateTime? RequestedTimeUtc { get; set; }
+    public DateTime StartTimeUtc { get; set; }
+    public DateTime EndTimeUtc { get; set; }
+
+    // Payments has no UTC timestamp, only a local one, so the approximate join needs a
+    // like-for-like local time. Not persisted — recomputed from the CSV at import time,
+    // used only in-memory by TripPaymentMatcher.
+    [NotMapped]
+    public DateTime? EndTimeLocalForMatching { get; set; }
 
     public string? City { get; set; }
 
