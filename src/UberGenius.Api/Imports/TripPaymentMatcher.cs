@@ -87,6 +87,16 @@ public static class TripPaymentMatcher
             }
         }
 
+        // Earnings is non-nullable, so unmatched trips need an explicit value. Real data
+        // confirms unmatched trips are cancellations where no payment was ever generated
+        // (see Trip.Status) — 0 is the correct earnings, not a placeholder for "unknown".
+        // An unmatched *completed* trip would be unexpected (none observed in real data),
+        // but still defaults to 0 here rather than leaving the import blocked or guessing.
+        foreach (var trip in trips.Where(t => t.EarningsMatchQuality == PaymentMatchQuality.Unmatched))
+        {
+            trip.Earnings = 0m;
+        }
+
         return new TripPaymentMatchStatistics(
             TripsConfidentMatch: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Confident),
             TripsApproximateMatch: trips.Count(t => t.EarningsMatchQuality == PaymentMatchQuality.Approximate),

@@ -38,13 +38,11 @@ public class Trip
     [Precision(9, 2)]
     public decimal? FareDistanceMiles { get; set; }
 
-    // Gross fee charged to the rider — not the driver's net payout. Confirmed identical
-    // to cancellation_fee_local across all real rows, so only one column is kept.
+    // Real net earnings: the matched Payments total, or 0 when unmatched (confirmed against
+    // real data that unmatched trips are cancellations with no payment ever generated — 0 is
+    // a real value here, not a placeholder for "unknown"). See TripPaymentMatcher.
     [Precision(9, 2)]
-    public decimal? CancellationFee { get; set; }
-
-    [Precision(9, 2)]
-    public decimal? Earnings { get; set; }
+    public decimal Earnings { get; set; }
 
     public string? MatchedPaymentTripUuid { get; set; }
     public PaymentMatchQuality EarningsMatchQuality { get; set; } = PaymentMatchQuality.Unmatched;

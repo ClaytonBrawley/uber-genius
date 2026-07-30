@@ -23,7 +23,6 @@ public static class TripCsvImporter
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
         ["DistanceMiles"] = ["trip_distance_miles", "distance mi", "distance", "trip distance", "miles"],
         ["FareDistanceMiles"] = ["fare_distance_miles"],
-        ["CancellationFee"] = ["cancellation_fee_usd", "cancellation_fee_local"],
     };
 
     private static readonly string[] RequiredFields = ["StartTime"];
@@ -98,7 +97,6 @@ public static class TripCsvImporter
             EndTimeUtc = endTimeUtc,
             DistanceMiles = distance,
             FareDistanceMiles = GetDecimal("FareDistanceMiles"),
-            CancellationFee = GetDecimal("CancellationFee"),
             City = mapping.TryGetValue("City", out var cityHeader) ? csv.GetField(cityHeader) : null,
             Status = mapping.TryGetValue("Status", out var statusHeader) ? csv.GetField(statusHeader) : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)
