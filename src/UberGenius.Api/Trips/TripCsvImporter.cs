@@ -17,11 +17,6 @@ public static class TripCsvImporter
         ["StartTime"] = ["begintrip_timestamp_utc", "trip start time", "start time", "begin trip time", "pickup time"],
         ["EndTime"] = ["dropoff_timestamp_utc", "trip end time", "end time", "dropoff time", "trip completed"],
         ["RequestedTime"] = ["request_timestamp_utc", "trip requested", "request time"],
-        // Local counterparts are only used internally to compare against Payments'
-        // Local Timestamp (which has no UTC equivalent) — never persisted as-is.
-        ["StartTimeLocal"] = ["begintrip_timestamp_local"],
-        ["EndTimeLocal"] = ["dropoff_timestamp_local"],
-        ["RequestedTimeLocal"] = ["request_timestamp_local"],
         ["City"] = ["city_name", "city"],
         ["PickupLocation"] = ["pickup address", "pickup location", "origin", "pickup"],
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
@@ -86,9 +81,6 @@ public static class TripCsvImporter
 
         var endTimeUtc = GetTime("EndTime") ?? startTimeUtc;
 
-        // Best-effort local anchor for the Payments join only — never persisted.
-        var endTimeLocal = GetTime("EndTimeLocal") ?? GetTime("StartTimeLocal") ?? GetTime("RequestedTimeLocal");
-
         var distance = mapping.TryGetValue("DistanceMiles", out var distHeader)
             ? CsvHeaderMapper.TryParseDecimal(csv.GetField(distHeader)) ?? 0m
             : 0m;
@@ -98,7 +90,6 @@ public static class TripCsvImporter
             RequestedTimeUtc = requestedTimeUtc,
             StartTimeUtc = startTimeUtc,
             EndTimeUtc = endTimeUtc,
-            EndTimeLocalForMatching = endTimeLocal,
             DistanceMiles = distance,
             City = mapping.TryGetValue("City", out var cityHeader) ? csv.GetField(cityHeader) : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)
