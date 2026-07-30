@@ -12,19 +12,12 @@ public static class ImportEndpoints
     {
         app.MapPost("/api/imports/validate/{category}", async (string category, IFormFile file) =>
         {
-            if (file.Length == 0)
-            {
-                return Results.BadRequest("No file was uploaded.");
-            }
-
-            await using var stream = file.OpenReadStream();
-
             var result = category switch
             {
-                "driver-profile" => DriverProfileCsvImporter.Import(stream).Result,
-                "trips" => TripCsvImporter.Import(stream).Result,
-                "payments" => PaymentCsvImporter.Import(stream).Result,
-                "app-analytics" => AppAnalyticsCsvImporter.Import(stream).Result,
+                "driver-profile" => (await ParseAsync(file, DriverProfileCsvImporter.Import)).Result,
+                "trips" => (await ParseAsync(file, TripCsvImporter.Import)).Result,
+                "payments" => (await ParseAsync(file, PaymentCsvImporter.Import)).Result,
+                "app-analytics" => (await ParseAsync(file, AppAnalyticsCsvImporter.Import)).Result,
                 _ => CsvImportResult.Failure($"Unknown import category '{category}'.", []),
             };
 
@@ -78,6 +71,8 @@ public static class ImportEndpoints
         }).DisableAntiforgery();
     }
 
+    // Wraps parsing so any unexpected failure (bad encoding, malformed file, etc.) comes
+    // back as a diagnosable CsvImportResult instead of an opaque 500 with no explanation.
     private static async Task<(CsvImportResult Result, List<T> Items)> ParseAsync<T>(
         IFormFile file,
         Func<Stream, (CsvImportResult Result, List<T> Items)> import)
@@ -87,7 +82,14 @@ public static class ImportEndpoints
             return (CsvImportResult.Failure("No file was uploaded.", []), []);
         }
 
-        await using var stream = file.OpenReadStream();
-        return import(stream);
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            return import(stream);
+        }
+        catch (Exception ex)
+        {
+            return (CsvImportResult.Failure($"Unexpected error while parsing the file: {ex.Message}", []), []);
+        }
     }
 }

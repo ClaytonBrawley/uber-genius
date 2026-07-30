@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using UberGenius.Api.Data;
 using UberGenius.Api.Imports;
@@ -5,6 +6,11 @@ using UberGenius.Api.Imports;
 var builder = WebApplication.CreateBuilder(args);
 
 const string AngularDevCorsPolicy = "AngularDev";
+
+// Real Uber export files (especially App Analytics GPS telemetry) can exceed the
+// ASP.NET Core defaults (~28MB Kestrel / 128MB multipart form). This is a local
+// single-user tool, so a generous limit is fine.
+const long MaxImportFileSizeBytes = 500_000_000;
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -17,6 +23,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(AngularDevCorsPolicy, policy =>
         policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod());
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = MaxImportFileSizeBytes;
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = MaxImportFileSizeBytes;
 });
 
 var app = builder.Build();
