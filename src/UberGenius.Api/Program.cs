@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using UberGenius.Api.Data;
+using UberGenius.Api.Imports;
 
 var builder = WebApplication.CreateBuilder(args);
+
+const string AngularDevCorsPolicy = "AngularDev";
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -9,6 +12,12 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("UberGenius")));
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(AngularDevCorsPolicy, policy =>
+        policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod());
+});
 
 var app = builder.Build();
 
@@ -20,8 +29,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors(AngularDevCorsPolicy);
+
 app.MapGet("/health/db", async (AppDbContext db) =>
     await db.Database.CanConnectAsync() ? Results.Ok("connected") : Results.StatusCode(503));
+
+app.MapImportEndpoints();
 
 var summaries = new[]
 {
