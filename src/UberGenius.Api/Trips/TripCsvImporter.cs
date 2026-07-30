@@ -18,9 +18,13 @@ public static class TripCsvImporter
         ["EndTime"] = ["dropoff_timestamp_utc", "trip end time", "end time", "dropoff time", "trip completed"],
         ["RequestedTime"] = ["request_timestamp_utc", "trip requested", "request time"],
         ["City"] = ["city_name", "city"],
+        ["Status"] = ["status"],
         ["PickupLocation"] = ["pickup address", "pickup location", "origin", "pickup"],
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
         ["DistanceMiles"] = ["trip_distance_miles", "distance mi", "distance", "trip distance", "miles"],
+        ["FareDistanceMiles"] = ["fare_distance_miles"],
+        ["CancellationFeeLocal"] = ["cancellation_fee_local"],
+        ["CancellationFeeUsd"] = ["cancellation_fee_usd"],
     };
 
     private static readonly string[] RequiredFields = ["StartTime"];
@@ -85,13 +89,20 @@ public static class TripCsvImporter
             ? CsvHeaderMapper.TryParseDecimal(csv.GetField(distHeader)) ?? 0m
             : 0m;
 
+        decimal? GetDecimal(string field) =>
+            mapping.TryGetValue(field, out var header) ? CsvHeaderMapper.TryParseDecimal(csv.GetField(header)) : null;
+
         return new Trip
         {
             RequestedTimeUtc = requestedTimeUtc,
             StartTimeUtc = startTimeUtc,
             EndTimeUtc = endTimeUtc,
             DistanceMiles = distance,
+            FareDistanceMiles = GetDecimal("FareDistanceMiles"),
+            CancellationFeeLocal = GetDecimal("CancellationFeeLocal"),
+            CancellationFeeUsd = GetDecimal("CancellationFeeUsd"),
             City = mapping.TryGetValue("City", out var cityHeader) ? csv.GetField(cityHeader) : null,
+            Status = mapping.TryGetValue("Status", out var statusHeader) ? csv.GetField(statusHeader) : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)
                 ? csv.GetField(pickupHeader) ?? ""
                 : "",

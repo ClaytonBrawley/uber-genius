@@ -20,6 +20,7 @@ public class Trip
     public DateTime EndTimeUtc { get; set; }
 
     public string? City { get; set; }
+    public string? Status { get; set; }
 
     public string PickupLocation { get; set; } = string.Empty;
     public string DropoffLocation { get; set; } = string.Empty;
@@ -31,6 +32,17 @@ public class Trip
 
     [Precision(9, 2)]
     public decimal DistanceMiles { get; set; }
+
+    // Temporary: capturing both local/usd and both distance figures to check against real
+    // data whether they ever differ — consolidate to one column each if they never do.
+    [Precision(9, 2)]
+    public decimal? FareDistanceMiles { get; set; }
+
+    [Precision(9, 2)]
+    public decimal? CancellationFeeLocal { get; set; }
+
+    [Precision(9, 2)]
+    public decimal? CancellationFeeUsd { get; set; }
 
     [Precision(9, 2)]
     public decimal? Earnings { get; set; }
