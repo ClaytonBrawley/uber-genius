@@ -1,11 +1,10 @@
 import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { ImportWizard } from './import-wizard/import-wizard';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ThemeService } from './theme/theme.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ImportWizard],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html'
 })
 export class App {

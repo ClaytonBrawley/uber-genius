@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using UberGenius.Api.Data;
 using UberGenius.Api.Imports;
+using UberGenius.Api.Json;
+using UberGenius.Api.Trips;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,11 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartBodyLengthLimit = MaxImportFileSizeBytes;
 });
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,6 +58,7 @@ app.MapGet("/health/db", async (AppDbContext db) =>
     await db.Database.CanConnectAsync() ? Results.Ok("connected") : Results.StatusCode(503));
 
 app.MapImportEndpoints();
+app.MapTripListEndpoints();
 
 var summaries = new[]
 {

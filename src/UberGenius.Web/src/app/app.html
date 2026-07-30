@@ -1,7 +1,25 @@
 <div class="min-h-screen bg-canvas">
   <header class="border-b border-line bg-surface">
     <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-      <h1 class="text-lg font-semibold tracking-tight text-ink">Uber Genius</h1>
+      <div class="flex items-center gap-8">
+        <h1 class="text-lg font-semibold tracking-tight text-ink">Uber Genius</h1>
+        <nav class="flex gap-1">
+          <a
+            routerLink="/trips"
+            routerLinkActive="bg-neutral-surface text-ink"
+            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+          >
+            Trips
+          </a>
+          <a
+            routerLink="/import"
+            routerLinkActive="bg-neutral-surface text-ink"
+            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+          >
+            Import
+          </a>
+        </nav>
+      </div>
 
       <button
         type="button"
@@ -18,7 +36,6 @@
   </header>
 
   <main class="mx-auto max-w-5xl px-6 py-8">
-    <app-import-wizard />
     <router-outlet />
   </main>
 </div>

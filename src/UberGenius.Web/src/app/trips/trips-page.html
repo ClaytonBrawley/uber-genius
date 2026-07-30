@@ -1,0 +1,85 @@
+<section>
+  <div class="flex items-baseline justify-between">
+    <h2 class="text-xl font-semibold tracking-tight text-ink">Trips</h2>
+    @if (result(); as r) {
+      <p class="text-sm text-ink-muted">{{ r.totalCount }} total</p>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+  }
+
+  <div class="mt-4 overflow-x-auto rounded-card border border-line bg-surface">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+          <th class="cursor-pointer select-none px-4 py-3" (click)="sortByColumn('startTime')">
+            Date @if (sortBy() === 'startTime') { {{ sortDir() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th class="px-4 py-3">City</th>
+          <th class="cursor-pointer select-none px-4 py-3" (click)="sortByColumn('distance')">
+            Distance @if (sortBy() === 'distance') { {{ sortDir() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th class="px-4 py-3">Duration</th>
+          <th class="cursor-pointer select-none px-4 py-3 text-right" (click)="sortByColumn('earnings')">
+            Earnings @if (sortBy() === 'earnings') { {{ sortDir() === 'asc' ? '▲' : '▼' }} }
+          </th>
+          <th class="px-4 py-3">Status</th>
+          <th class="px-4 py-3">Match</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (trip of result()?.items ?? []; track trip.id) {
+          <tr class="border-b border-line last:border-0 hover:bg-surface-hover">
+            <td class="px-4 py-3 text-ink">{{ formatDate(trip.startTimeUtc) }}</td>
+            <td class="px-4 py-3 text-ink-muted">{{ trip.city ?? '—' }}</td>
+            <td class="px-4 py-3 tabular-nums text-ink-muted">{{ trip.distanceMiles.toFixed(1) }} mi</td>
+            <td class="px-4 py-3 tabular-nums text-ink-muted">{{ durationLabel(trip) }}</td>
+            <td class="px-4 py-3 text-right tabular-nums font-medium text-ink">{{ formatEarnings(trip.earnings) }}</td>
+            <td class="px-4 py-3 text-ink-muted">{{ formatStatus(trip.status) }}</td>
+            <td class="px-4 py-3">
+              <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="matchBadgeClass(trip.earningsMatchQuality)">
+                {{ trip.earningsMatchQuality }}
+              </span>
+            </td>
+          </tr>
+        }
+        @if (!loading() && (result()?.items ?? []).length === 0) {
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-ink-muted">No trips found.</td>
+          </tr>
+        }
+        @if (loading()) {
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-ink-muted">Loading…</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (result(); as r) {
+    <div class="mt-4 flex items-center justify-between text-sm text-ink-muted">
+      <span>Page {{ r.page }} of {{ totalPages() }}</span>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="goToPage(-1)"
+          [disabled]="r.page <= 1"
+          class="rounded-control border border-line px-3 py-1.5 transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          (click)="goToPage(1)"
+          [disabled]="r.page >= totalPages()"
+          class="rounded-control border border-line px-3 py-1.5 transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  }
+</section>
