@@ -1,1 +1,107 @@
-/* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
+
+/* Dark mode is toggled by adding/removing a `dark` class on <html>, driven by
+   ThemeService (see src/app/theme/theme.service.ts) rather than following
+   prefers-color-scheme automatically — lets the user override the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+ * DESIGN TOKENS
+ * ---------------------------------------------------------------------------
+ * Single source of truth for the app's palette, type, and radii. Everything
+ * below is a placeholder "clean analytics dashboard" default meant to be
+ * swapped later — change a value here and every component using the
+ * corresponding utility (bg-surface, text-accent, etc.) updates everywhere.
+ *
+ * Colors are defined twice: once in @theme (the light/default values, which
+ * is what generates the Tailwind utility classes) and again as a plain
+ * override inside `.dark` below. Only the values change between the two
+ * blocks — never rename a token in one without renaming it in the other.
+ * ------------------------------------------------------------------------ */
+
+@theme {
+  /* Typography — system stacks for now; swap for a real font pairing later. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Surfaces */
+  --color-canvas: #f8fafc; /* page background */
+  --color-surface: #ffffff; /* cards, panels, table rows */
+  --color-surface-hover: #f1f5f9; /* hovered row/card */
+  --color-line: #e2e8f0; /* borders, dividers */
+
+  /* Text */
+  --color-ink: #0f172a; /* primary text */
+  --color-ink-muted: #64748b; /* secondary/caption text */
+
+  /* Brand accent — used for primary actions, links, focus rings */
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-ink: #ffffff; /* text/icon color on top of --color-accent */
+
+  /* Semantic status colors (e.g. Confident/Approximate/Cancelled match quality,
+     success/error states) — a surface + ink pair each, for chips/badges. */
+  --color-success: #16a34a;
+  --color-success-surface: #dcfce7;
+  --color-success-ink: #166534;
+
+  --color-warning: #d97706;
+  --color-warning-surface: #fef3c7;
+  --color-warning-ink: #92400e;
+
+  --color-danger: #dc2626;
+  --color-danger-surface: #fee2e2;
+  --color-danger-ink: #991b1b;
+
+  --color-neutral-surface: #f1f5f9;
+  --color-neutral-ink: #475569;
+
+  /* Radii */
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+}
+
+.dark {
+  --color-canvas: #0b1120;
+  --color-surface: #131b2e;
+  --color-surface-hover: #1b2438;
+  --color-line: #263045;
+
+  --color-ink: #e2e8f0;
+  --color-ink-muted: #8b98ac;
+
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-ink: #0b1120;
+
+  --color-success: #4ade80;
+  --color-success-surface: #14301f;
+  --color-success-ink: #86efac;
+
+  --color-warning: #fbbf24;
+  --color-warning-surface: #3a2a0d;
+  --color-warning-ink: #fcd34d;
+
+  --color-danger: #f87171;
+  --color-danger-surface: #3a1414;
+  --color-danger-ink: #fca5a5;
+
+  --color-neutral-surface: #1b2438;
+  --color-neutral-ink: #94a3b8;
+}
+
+@layer base {
+  /* Without this, native form controls (file inputs, scrollbars, etc.) keep
+     rendering with light browser chrome even when our own theme is dark. */
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+}

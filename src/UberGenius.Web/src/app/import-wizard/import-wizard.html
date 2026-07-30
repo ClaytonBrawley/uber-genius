@@ -1,78 +1,98 @@
-<section class="import-wizard">
-  <h2>Import Uber Data</h2>
-  <p>Upload each file in order. All four are required before you can submit.</p>
+<section class="mx-auto max-w-2xl">
+  <h2 class="text-xl font-semibold tracking-tight text-ink">Import Uber Data</h2>
+  <p class="mt-1 text-sm text-ink-muted">Upload each file in order. All four are required before you can submit.</p>
 
-  <ol class="steps">
+  <ol class="mt-6 flex list-none flex-col gap-4">
     @for (step of steps(); track step.category; let i = $index) {
       <li
-        class="step"
-        [class.valid]="step.status === 'valid'"
-        [class.invalid]="step.status === 'invalid'"
-        [class.locked]="!isUnlocked(i)"
+        class="rounded-card border bg-surface p-4 transition-colors"
+        [class.border-line]="step.status !== 'valid' && step.status !== 'invalid'"
+        [class.border-success]="step.status === 'valid'"
+        [class.border-danger]="step.status === 'invalid'"
+        [class.opacity-50]="!isUnlocked(i)"
       >
-        <div class="step-header">
-          <span class="step-number">{{ i + 1 }}</span>
-          <span class="step-label">{{ step.label }}</span>
+        <div class="mb-2 flex items-center gap-2 font-semibold text-ink">
+          <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-neutral-surface text-sm font-normal text-neutral-ink">
+            {{ i + 1 }}
+          </span>
+          <span>{{ step.label }}</span>
           @if (step.status === 'valid') {
-            <span class="checkmark">✓</span>
+            <span class="text-success">✓</span>
           }
           @if (step.status === 'validating') {
-            <span class="validating">Validating…</span>
+            <span class="text-sm font-normal text-ink-muted">Validating…</span>
           }
         </div>
 
-        <input type="file" accept=".csv" [disabled]="!isUnlocked(i)" (change)="onFileSelected(i, $event)" />
+        <input
+          type="file"
+          accept=".csv"
+          [disabled]="!isUnlocked(i)"
+          (change)="onFileSelected(i, $event)"
+          class="block w-full text-sm text-ink-muted file:mr-3 file:rounded-control file:border-0 file:bg-neutral-surface file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        />
 
         @if (step.result; as r) {
           @if (!r.succeeded) {
-            <p class="error">{{ r.error }}</p>
+            <p class="mt-2 text-sm text-danger">{{ r.error }}</p>
           }
           @if (r.rowErrors.length > 0) {
-            <details>
-              <summary>{{ r.rowErrors.length }} row error(s)</summary>
-              <ul>
+            <details class="mt-2 text-sm text-ink-muted">
+              <summary class="cursor-pointer">{{ r.rowErrors.length }} row error(s)</summary>
+              <ul class="mt-1 list-disc space-y-0.5 pl-5">
                 @for (e of r.rowErrors; track e) {
                   <li>{{ e }}</li>
                 }
               </ul>
             </details>
           }
-          <details class="diagnostics">
-            <summary>Headers found / column mapping</summary>
-            <p>Rows read: {{ r.rowsRead }}, imported: {{ r.rowsImported }}</p>
-            <ul>
+          <details class="mt-2 text-sm text-ink-muted">
+            <summary class="cursor-pointer">Headers found / column mapping</summary>
+            <p class="mt-1">Rows read: {{ r.rowsRead }}, imported: {{ r.rowsImported }}</p>
+            <ul class="mt-1 list-disc space-y-0.5 pl-5">
               @for (entry of mappingEntries(r.columnMapping); track entry[0]) {
                 <li>{{ entry[0] }} → {{ entry[1] }}</li>
               }
             </ul>
           </details>
         } @else if (step.status === 'invalid') {
-          <p class="error">Upload failed — check the file and try again.</p>
+          <p class="mt-2 text-sm text-danger">Upload failed — check the file and try again.</p>
         }
       </li>
     }
   </ol>
 
-  <button type="button" (click)="submit()" [disabled]="!allValid() || submitting()">
+  <button
+    type="button"
+    (click)="submit()"
+    [disabled]="!allValid() || submitting()"
+    class="mt-6 rounded-control bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+  >
     {{ submitting() ? 'Submitting…' : 'Submit All' }}
   </button>
 
   @if (submitError()) {
-    <p class="error">{{ submitError() }}</p>
+    <p class="mt-2 text-sm text-danger">{{ submitError() }}</p>
   }
 
   @if (submitResult(); as result) {
-    <div class="submit-result" [class.failed]="!result.succeeded">
+    <div
+      class="mt-6 rounded-card border bg-surface p-4"
+      [class.border-line]="result.succeeded"
+      [class.border-danger]="!result.succeeded"
+    >
       @if (!result.succeeded) {
-        <p class="error">{{ result.error }}</p>
+        <p class="text-sm text-danger">{{ result.error }}</p>
       }
       @if (result.succeeded) {
-        <p>Trips imported: {{ result.tripsImported }}</p>
-        <p>Payment rows imported: {{ result.paymentRowsImported }}</p>
-        <p>App Analytics events imported: {{ result.appAnalyticsEventsImported }}</p>
+        <div class="space-y-1 text-sm text-ink">
+          <p>Trips imported: {{ result.tripsImported }}</p>
+          <p>Payment rows imported: {{ result.paymentRowsImported }}</p>
+          <p>App Analytics events imported: {{ result.appAnalyticsEventsImported }}</p>
+        </div>
         @if (result.matchStatistics; as stats) {
-          <h3>Earnings match quality</h3>
-          <ul>
+          <h3 class="mt-4 text-sm font-semibold text-ink">Earnings match quality</h3>
+          <ul class="mt-1 space-y-0.5 text-sm text-ink-muted">
             <li>Confident matches: {{ stats.tripsConfidentMatch }}</li>
             <li>Approximate matches: {{ stats.tripsApproximateMatch }}</li>
             <li>Cancelled (no payment expected): {{ stats.tripsCancelled }}</li>

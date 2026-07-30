@@ -57,7 +57,6 @@ const INITIAL_STEPS: StepState[] = [
   selector: 'app-import-wizard',
   imports: [],
   templateUrl: './import-wizard.html',
-  styleUrl: './import-wizard.css',
 })
 export class ImportWizard {
   private readonly http = inject(HttpClient);

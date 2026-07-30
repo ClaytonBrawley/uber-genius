@@ -1,3 +1,24 @@
-<app-import-wizard />
+<div class="min-h-screen bg-canvas">
+  <header class="border-b border-line bg-surface">
+    <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+      <h1 class="text-lg font-semibold tracking-tight text-ink">Uber Genius</h1>
 
-<router-outlet />
+      <button
+        type="button"
+        (click)="theme.toggle()"
+        class="rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+      >
+        @if (theme.theme() === 'dark') {
+          ☀️ Light
+        } @else {
+          🌙 Dark
+        }
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-6 py-8">
+    <app-import-wizard />
+    <router-outlet />
+  </main>
+</div>
