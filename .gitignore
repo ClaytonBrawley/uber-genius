@@ -428,3 +428,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 .DS_Store
+
+# Claude Code local settings (personal, not shared)
+.claude/settings.local.json
