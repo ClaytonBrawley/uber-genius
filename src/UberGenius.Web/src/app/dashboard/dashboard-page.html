@@ -1,0 +1,50 @@
+<section>
+  <h2 class="text-xl font-semibold tracking-tight text-ink">Dashboard</h2>
+  <p class="mt-1 text-sm text-ink-muted">All-time totals from your completed trips.</p>
+
+  @if (error()) {
+    <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="mt-6 text-sm text-ink-muted">Loading…</p>
+  }
+
+  @if (summary(); as s) {
+    <div class="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Total earnings</p>
+        <p class="mt-1 text-3xl font-semibold text-accent">{{ formatCurrency(s.totalEarnings) }}</p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Total trips</p>
+        <p class="mt-1 text-3xl font-semibold text-ink">{{ s.totalTrips.toLocaleString() }}</p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Average earnings per trip</p>
+        <p class="mt-1 text-3xl font-semibold text-ink">{{ formatCurrency(s.averageEarningsPerTrip) }}</p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Estimated hourly earnings (active time)</p>
+        <p class="mt-1 text-3xl font-semibold text-ink">{{ formatCurrency(s.estimatedHourlyEarnings) }}/hr</p>
+        <p class="mt-1 text-xs text-ink-muted">
+          Request time to drop-off. Doesn't yet correct for overlapping back-to-back trips or
+          offline waiting time — true online earnings will differ.
+        </p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Total miles</p>
+        <p class="mt-1 text-3xl font-semibold text-ink">{{ formatMiles(s.totalMiles) }}</p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-5">
+        <p class="text-sm text-ink-muted">Average earnings per mile</p>
+        <p class="mt-1 text-3xl font-semibold text-ink">{{ formatCurrency(s.averageEarningsPerMile) }}</p>
+      </div>
+    </div>
+  }
+</section>
