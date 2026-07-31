@@ -61,6 +61,7 @@ app.MapImportEndpoints();
 app.MapTripListEndpoints();
 app.MapTripSummaryEndpoints();
 app.MapTripEarningsByDayEndpoints();
+app.MapTripMapEndpoints();
 
 var summaries = new[]
 {

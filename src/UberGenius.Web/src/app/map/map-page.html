@@ -1,0 +1,31 @@
+<section>
+  <h2 class="text-xl font-semibold tracking-tight text-ink">Trip Map</h2>
+  <p class="mt-1 text-sm text-ink-muted">
+    Pickup and drop-off locations approximated from GPS telemetry — only available for trips
+    within the most recent month of app data.
+  </p>
+
+  @if (error()) {
+    <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="mt-6 text-sm text-ink-muted">Loading…</p>
+  }
+
+  <div class="mt-6 overflow-hidden rounded-card border border-line" [class.hidden]="loading()">
+    <div #mapContainer class="h-[500px] w-full"></div>
+  </div>
+
+  @if (!loading() && !error()) {
+    <div class="mt-3 flex items-center gap-4 text-xs text-ink-muted">
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-success"></span> Pickup
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block h-2.5 w-2.5 rounded-full bg-danger"></span> Drop-off
+      </span>
+      <span>{{ points().length }} trips with a location match</span>
+    </div>
+  }
+</section>

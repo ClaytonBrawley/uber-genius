@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 /* Dark mode is toggled by adding/removing a `dark` class on <html>, driven by
    ThemeService (see src/app/theme/theme.service.ts) rather than following
