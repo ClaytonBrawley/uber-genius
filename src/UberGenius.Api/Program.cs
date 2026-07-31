@@ -60,6 +60,7 @@ app.MapGet("/health/db", async (AppDbContext db) =>
 app.MapImportEndpoints();
 app.MapTripListEndpoints();
 app.MapTripSummaryEndpoints();
+app.MapTripEarningsByDayEndpoints();
 
 var summaries = new[]
 {

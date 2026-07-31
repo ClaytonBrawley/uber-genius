@@ -1,0 +1,32 @@
+<section>
+  <h2 class="text-xl font-semibold tracking-tight text-ink">Earnings Analytics</h2>
+  <p class="mt-1 text-sm text-ink-muted">Total earnings by day of week, from completed trips.</p>
+
+  @if (error()) {
+    <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p class="mt-6 text-sm text-ink-muted">Loading…</p>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="mt-6 rounded-card border border-line bg-surface p-6">
+      <div class="flex h-64 items-stretch gap-3">
+        @for (bucket of buckets(); track bucket.label) {
+          <div class="flex flex-1 flex-col items-center gap-2">
+            <span class="text-xs text-ink-muted">{{ formatCurrency(bucket.total) }}</span>
+            <div class="flex w-full flex-1 items-end">
+              <div
+                class="w-full rounded-t-control bg-accent transition-all"
+                [style.height.%]="barHeightPercent(bucket.total)"
+              ></div>
+            </div>
+            <span class="text-sm font-medium text-ink">{{ bucket.label }}</span>
+            <span class="text-xs text-ink-muted">{{ bucket.tripCount }} trips</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
