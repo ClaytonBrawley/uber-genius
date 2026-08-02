@@ -2,9 +2,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace UberGenius.Api.Data;
 
-public class TripPayment
+public class TripPayment : IUserOwned
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
 
     public string TripUuid { get; set; } = "";
     public string CityName { get; set; } = "";

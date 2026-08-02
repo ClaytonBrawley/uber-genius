@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using UberGenius.Api.AppAnalytics;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 using UberGenius.Api.DriverProfiles;
 using UberGenius.Api.Payments;
@@ -22,13 +24,14 @@ public static class ImportEndpoints
             };
 
             return result.Succeeded ? Results.Ok(result) : Results.BadRequest(result);
-        }).DisableAntiforgery();
+        }).DisableAntiforgery().RequireAuthorization();
 
         app.MapPost("/api/imports/submit", async (
             IFormFile driverProfile,
             IFormFile trips,
             IFormFile payments,
             IFormFile appAnalytics,
+            ClaimsPrincipal principal,
             AppDbContext db) =>
         {
             // Files are re-parsed here regardless of any earlier client-side validation —
@@ -46,6 +49,12 @@ public static class ImportEndpoints
                     driverProfileResult, tripsResult, paymentsResult, appAnalyticsResult,
                     null, 0, 0, 0));
             }
+
+            var userId = principal.GetUserId();
+            driverProfiles.StampUserId(userId);
+            analyticsEvents.StampUserId(userId);
+            paymentList.StampUserId(userId);
+            tripList.StampUserId(userId);
 
             await using var transaction = await db.Database.BeginTransactionAsync();
 
@@ -68,7 +77,7 @@ public static class ImportEndpoints
                 tripList.Count,
                 paymentList.Count,
                 analyticsEvents.Count));
-        }).DisableAntiforgery();
+        }).DisableAntiforgery().RequireAuthorization();
     }
 
     // Wraps parsing so any unexpected failure (bad encoding, malformed file, etc.) comes

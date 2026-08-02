@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Trips;
@@ -24,10 +26,11 @@ public static class TripMapEndpoints
 
     public static void MapTripMapEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/trips/map-points", async (AppDbContext db) =>
+        app.MapGet("/api/trips/map-points", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
+            var userId = principal.GetUserId();
             var events = await db.AppAnalyticsEvents
-                .Where(e => e.Latitude != null && e.Longitude != null)
+                .Where(e => e.UserId == userId && e.Latitude != null && e.Longitude != null)
                 .OrderBy(e => e.EventTimeUtc)
                 .Select(e => new { e.EventTimeUtc, e.Latitude, e.Longitude })
                 .ToListAsync();
@@ -71,7 +74,7 @@ public static class TripMapEndpoints
             var windowEnd = eventTimes[^1];
 
             var trips = await db.Trips
-                .Where(t => t.Status == "completed" && t.StartTimeUtc >= windowStart && t.StartTimeUtc <= windowEnd)
+                .Where(t => t.UserId == userId && t.Status == "completed" && t.StartTimeUtc >= windowStart && t.StartTimeUtc <= windowEnd)
                 .Select(t => new { t.Id, t.StartTimeUtc, t.EndTimeUtc, t.Earnings, t.City })
                 .ToListAsync();
 
@@ -98,6 +101,6 @@ public static class TripMapEndpoints
             }
 
             return Results.Ok(points);
-        });
+        }).RequireAuthorization();
     }
 }

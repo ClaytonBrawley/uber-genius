@@ -4,9 +4,10 @@ namespace UberGenius.Api.Data;
 
 // One snapshot row per successful import — append-only rather than upserted in place,
 // since Rating/LifetimeCompletedTrips change over time and a history has future value.
-public class DriverProfile
+public class DriverProfile : IUserOwned
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public DateTime ImportedAtUtc { get; set; }
 
     public string FirstName { get; set; } = "";

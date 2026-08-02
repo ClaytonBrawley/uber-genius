@@ -13,9 +13,10 @@ public enum PaymentMatchQuality
     Cancelled = 3,
 }
 
-public class Trip
+public class Trip : IUserOwned
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
 
     // All times are stored in UTC; convert to local only for display. RequestedTimeUtc is
     // null only if the file has no request-time column at all — every real row should have one.

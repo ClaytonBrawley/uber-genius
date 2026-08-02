@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Trips;
@@ -12,14 +14,15 @@ public static class TripEarningsByDayEndpoints
 {
     public static void MapTripEarningsByDayEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/trips/earnings-points", async (AppDbContext db) =>
+        app.MapGet("/api/trips/earnings-points", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
+            var userId = principal.GetUserId();
             var points = await db.Trips
-                .Where(t => t.Status == "completed")
+                .Where(t => t.UserId == userId && t.Status == "completed")
                 .Select(t => new TripEarningsPoint(t.StartTimeUtc, t.Earnings))
                 .ToListAsync();
 
             return Results.Ok(points);
-        });
+        }).RequireAuthorization();
     }
 }

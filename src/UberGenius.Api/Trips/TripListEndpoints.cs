@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Trips;
@@ -19,21 +21,21 @@ public static class TripListEndpoints
 {
     public static void MapTripListEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/trips", async (AppDbContext db, int page = 1, int pageSize = 50, string sortBy = "startTime", string sortDir = "desc") =>
+        app.MapGet("/api/trips", async (ClaimsPrincipal principal, AppDbContext db, int page = 1, int pageSize = 50, string sortBy = "startTime", string sortDir = "desc") =>
         {
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 200);
             var descending = !string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
 
-            IQueryable<Trip> query = db.Trips;
-            query = sortBy switch
+            IQueryable<Trip> scoped = db.Trips.Where(t => t.UserId == principal.GetUserId());
+            var query = sortBy switch
             {
-                "earnings" => descending ? query.OrderByDescending(t => t.Earnings) : query.OrderBy(t => t.Earnings),
-                "distance" => descending ? query.OrderByDescending(t => t.DistanceMiles) : query.OrderBy(t => t.DistanceMiles),
-                _ => descending ? query.OrderByDescending(t => t.StartTimeUtc) : query.OrderBy(t => t.StartTimeUtc),
+                "earnings" => descending ? scoped.OrderByDescending(t => t.Earnings) : scoped.OrderBy(t => t.Earnings),
+                "distance" => descending ? scoped.OrderByDescending(t => t.DistanceMiles) : scoped.OrderBy(t => t.DistanceMiles),
+                _ => descending ? scoped.OrderByDescending(t => t.StartTimeUtc) : scoped.OrderBy(t => t.StartTimeUtc),
             };
 
-            var totalCount = await db.Trips.CountAsync();
+            var totalCount = await scoped.CountAsync();
             var items = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -43,6 +45,6 @@ public static class TripListEndpoints
                 .ToListAsync();
 
             return Results.Ok(new TripListResult(items, page, pageSize, totalCount));
-        });
+        }).RequireAuthorization();
     }
 }

@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Trips;
@@ -16,12 +18,13 @@ public static class TripSummaryEndpoints
 {
     public static void MapTripSummaryEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/trips/summary", async (AppDbContext db) =>
+        app.MapGet("/api/trips/summary", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
             // Cancelled trips have Earnings = 0 / DistanceMiles = 0 by design (no fare was
             // ever charged) — including them here would dilute the per-trip/per-mile
             // averages with entries that aren't really "a trip" from an earnings standpoint.
-            var completed = db.Trips.Where(t => t.Status == "completed");
+            var userId = principal.GetUserId();
+            var completed = db.Trips.Where(t => t.UserId == userId && t.Status == "completed");
 
             var aggregate = await completed
                 .GroupBy(t => 1)
@@ -56,6 +59,6 @@ public static class TripSummaryEndpoints
                 TotalDrivingHours: totalDrivingHours);
 
             return Results.Ok(summary);
-        });
+        }).RequireAuthorization();
     }
 }

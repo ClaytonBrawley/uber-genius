@@ -1,5 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using UberGenius.Api.Auth;
 using UberGenius.Api.Data;
 using UberGenius.Api.Imports;
 using UberGenius.Api.Json;
@@ -10,8 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 const string AngularDevCorsPolicy = "AngularDev";
 
 // Real Uber export files (especially App Analytics GPS telemetry) can exceed the
-// ASP.NET Core defaults (~28MB Kestrel / 128MB multipart form). This is a local
-// single-user tool, so a generous limit is fine.
+// ASP.NET Core defaults (~28MB Kestrel / 128MB multipart form).
 const long MaxImportFileSizeBytes = 500_000_000;
 
 // Add services to the container.
@@ -20,6 +24,27 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("UberGenius")));
+
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddSingleton<JwtTokenService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var signingKey = builder.Configuration["Auth:JwtSigningKey"]
+            ?? throw new InvalidOperationException("Auth:JwtSigningKey is not configured.");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Auth:JwtIssuer"] ?? "UberGenius",
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Auth:JwtAudience"] ?? "UberGenius",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
 {
@@ -54,9 +79,13 @@ app.UseHttpsRedirection();
 
 app.UseCors(AngularDevCorsPolicy);
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/health/db", async (AppDbContext db) =>
     await db.Database.CanConnectAsync() ? Results.Ok("connected") : Results.StatusCode(503));
 
+app.MapAuthEndpoints();
 app.MapImportEndpoints();
 app.MapTripListEndpoints();
 app.MapTripSummaryEndpoints();
