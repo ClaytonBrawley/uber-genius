@@ -43,11 +43,12 @@ public static class ImportEndpoints
 
             if (!driverProfileResult.Succeeded || !tripsResult.Succeeded || !paymentsResult.Succeeded || !appAnalyticsResult.Succeeded)
             {
+                var emptyCounts = new ImportCounts(0, 0, 0);
                 return Results.BadRequest(new ImportSubmitResult(
                     false,
                     "One or more files failed validation. No data was saved.",
                     driverProfileResult, tripsResult, paymentsResult, appAnalyticsResult,
-                    null, 0, 0, 0));
+                    null, emptyCounts, emptyCounts, emptyCounts, emptyCounts));
             }
 
             var userId = principal.GetUserId();
@@ -56,16 +57,28 @@ public static class ImportEndpoints
             paymentList.StampUserId(userId);
             tripList.StampUserId(userId);
 
+            // Dedup reads run in the same transaction as the writes below, so a concurrent
+            // submit from the same user can't slip a row past the existence check.
             await using var transaction = await db.Database.BeginTransactionAsync();
 
+            var tripDedupe = await ImportDeduper.DedupeTripsAsync(db, userId, tripList);
+            var paymentDedupe = await ImportDeduper.DedupePaymentsAsync(db, userId, paymentList);
+            var analyticsDedupe = await ImportDeduper.DedupeAnalyticsEventsAsync(db, userId, analyticsEvents);
+
             db.DriverProfiles.AddRange(driverProfiles);
-            db.AppAnalyticsEvents.AddRange(analyticsEvents);
-            db.TripPayments.AddRange(paymentList);
-            db.Trips.AddRange(tripList);
+            db.AppAnalyticsEvents.AddRange(analyticsDedupe.NewItems);
+            db.TripPayments.AddRange(paymentDedupe.NewItems);
+            db.Trips.AddRange(tripDedupe.NewItems);
             await db.SaveChangesAsync(); // assigns Ids needed for tie-breaking in the matcher
 
-            var matchStatistics = TripPaymentMatcher.Match(tripList, paymentList);
-            await db.SaveChangesAsync(); // persists Earnings/match-quality updates from the matcher
+            TripPaymentMatchStatistics? matchStatistics = null;
+            if (tripDedupe.NewItems.Count > 0 || paymentDedupe.NewItems.Count > 0)
+            {
+                var (candidateTrips, candidatePayments) =
+                    await TripPaymentMatcher.LoadCandidatesAsync(db, userId, tripDedupe.NewItems, paymentDedupe.NewItems);
+                matchStatistics = TripPaymentMatcher.Match(candidateTrips, candidatePayments);
+                await db.SaveChangesAsync(); // persists Earnings/match-quality updates from the matcher
+            }
 
             await transaction.CommitAsync();
 
@@ -74,9 +87,10 @@ public static class ImportEndpoints
                 null,
                 driverProfileResult, tripsResult, paymentsResult, appAnalyticsResult,
                 matchStatistics,
-                tripList.Count,
-                paymentList.Count,
-                analyticsEvents.Count));
+                new ImportCounts(driverProfiles.Count, driverProfiles.Count, 0),
+                new ImportCounts(tripList.Count, tripDedupe.NewItems.Count, tripDedupe.SkippedCount),
+                new ImportCounts(paymentList.Count, paymentDedupe.NewItems.Count, paymentDedupe.SkippedCount),
+                new ImportCounts(analyticsEvents.Count, analyticsDedupe.NewItems.Count, analyticsDedupe.SkippedCount)));
         }).DisableAntiforgery().RequireAuthorization();
     }
 

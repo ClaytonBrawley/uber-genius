@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Imports;
@@ -12,11 +13,51 @@ public record TripPaymentMatchStatistics(
 
 // Trips have no unique ID and Payments have no reference back to Trips other than
 // city + a per-trip-group timestamp, so this is a best-effort greedy nearest-neighbor
-// match, not a key join. Scoped to the current submit batch only (new Trips against
-// new Payments from the same submission) — matching against previously-persisted rows
-// is explicit future work.
+// match, not a key join. Match() itself only ever sees whatever list it's handed — see
+// LoadCandidatesAsync for how that list is built to also cover previously-persisted,
+// still-unmatched rows from earlier submissions (relevant now that re-imports are
+// incremental: a payment for last week's trip can show up in this week's upload).
 public static class TripPaymentMatcher
 {
+    // Builds the candidate set for one submission: the batch's newly-inserted trips/
+    // payments, plus any of the user's still-Unmatched trips and still-unclaimed payments
+    // within a day of the new batch's own timestamps. Approximate/Confident/Cancelled
+    // trips are deliberately excluded — reopening an already-settled match would mean
+    // unwinding its Earnings/MatchedPaymentTripUuid mutations for a rare payoff. Must run
+    // on the same AppDbContext/transaction as the AddRange+SaveChanges that persisted
+    // newTrips/newPayments — EF's change tracking then returns those exact tracked
+    // instances alongside any older open rows in one query, no manual list merging needed.
+    public static async Task<(List<Trip> CandidateTrips, List<TripPayment> CandidatePayments)> LoadCandidatesAsync(
+        AppDbContext db, int userId, List<Trip> newTrips, List<TripPayment> newPayments)
+    {
+        if (newTrips.Count == 0 && newPayments.Count == 0)
+        {
+            return (newTrips, newPayments);
+        }
+
+        var anchorTimes = newTrips.Select(t => t.RequestedTimeUtc ?? t.StartTimeUtc)
+            .Concat(newPayments.Select(p => p.LocalTimestamp))
+            .ToList();
+
+        // A day of padding is generous next to the 30-minute match tolerance below, and
+        // keeps the filter sargable against the indexed StartTimeUtc/LocalTimestamp
+        // columns (filtering on COALESCE(RequestedTimeUtc, StartTimeUtc) wouldn't be).
+        var windowStart = anchorTimes.Min().AddDays(-1);
+        var windowEnd = anchorTimes.Max().AddDays(1);
+
+        var candidateTrips = await db.Trips
+            .Where(t => t.UserId == userId && t.EarningsMatchQuality == PaymentMatchQuality.Unmatched
+                && t.StartTimeUtc >= windowStart && t.StartTimeUtc <= windowEnd)
+            .ToListAsync();
+
+        var candidatePayments = await db.TripPayments
+            .Where(p => p.UserId == userId && p.MatchedTripId == null
+                && p.LocalTimestamp >= windowStart && p.LocalTimestamp <= windowEnd)
+            .ToListAsync();
+
+        return (candidateTrips, candidatePayments);
+    }
+
     // Payments' "Local Timestamp" (despite the name) lines up with Trips' UTC request
     // time almost exactly, not any local/dropoff time — confirmed against a full real
     // import (2354 trips): comparing against RequestedTimeUtc with these thresholds

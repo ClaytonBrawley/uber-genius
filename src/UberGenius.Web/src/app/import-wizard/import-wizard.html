@@ -86,9 +86,19 @@
       }
       @if (result.succeeded) {
         <div class="space-y-1 text-sm text-ink">
-          <p>Trips imported: {{ result.tripsImported }}</p>
-          <p>Payment rows imported: {{ result.paymentRowsImported }}</p>
-          <p>App Analytics events imported: {{ result.appAnalyticsEventsImported }}</p>
+          <p>Driver profile: {{ result.driverProfileCounts.parsed }} parsed, {{ result.driverProfileCounts.added }} new</p>
+          <p>
+            Trips: {{ result.tripsCounts.parsed }} parsed, {{ result.tripsCounts.added }} new,
+            {{ result.tripsCounts.skipped }} already existed
+          </p>
+          <p>
+            Payment rows: {{ result.paymentRowsCounts.parsed }} parsed, {{ result.paymentRowsCounts.added }} new,
+            {{ result.paymentRowsCounts.skipped }} already existed
+          </p>
+          <p>
+            App Analytics events: {{ result.appAnalyticsEventsCounts.parsed }} parsed,
+            {{ result.appAnalyticsEventsCounts.added }} new, {{ result.appAnalyticsEventsCounts.skipped }} already existed
+          </p>
         </div>
         @if (result.matchStatistics; as stats) {
           <h3 class="mt-4 text-sm font-semibold text-ink">Earnings match quality</h3>

@@ -23,6 +23,12 @@ interface TripPaymentMatchStatistics {
   paymentGroupsUnmatched: number;
 }
 
+interface ImportCounts {
+  parsed: number;
+  added: number;
+  skipped: number;
+}
+
 interface ImportSubmitResult {
   succeeded: boolean;
   error: string | null;
@@ -31,9 +37,10 @@ interface ImportSubmitResult {
   paymentsResult: CsvImportResult;
   appAnalyticsResult: CsvImportResult;
   matchStatistics: TripPaymentMatchStatistics | null;
-  tripsImported: number;
-  paymentRowsImported: number;
-  appAnalyticsEventsImported: number;
+  driverProfileCounts: ImportCounts;
+  tripsCounts: ImportCounts;
+  paymentRowsCounts: ImportCounts;
+  appAnalyticsEventsCounts: ImportCounts;
 }
 
 interface StepState {

@@ -34,7 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(p => p.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<TripPayment>()
-            .HasIndex(p => p.UserId);
+            .HasIndex(p => new { p.UserId, p.LocalTimestamp });
 
         modelBuilder.Entity<AppAnalyticsEvent>()
             .HasOne<User>()
