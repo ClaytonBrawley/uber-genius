@@ -3,56 +3,71 @@
     <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
       <div class="flex items-center gap-8">
         <h1 class="text-lg font-semibold tracking-tight text-ink">Uber Genius</h1>
-        <nav class="flex gap-1">
-          <a
-            routerLink="/dashboard"
-            routerLinkActive="bg-neutral-surface text-ink"
-            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            Dashboard
-          </a>
-          <a
-            routerLink="/trips"
-            routerLinkActive="bg-neutral-surface text-ink"
-            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            Trips
-          </a>
-          <a
-            routerLink="/analytics"
-            routerLinkActive="bg-neutral-surface text-ink"
-            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            Analytics
-          </a>
-          <a
-            routerLink="/map"
-            routerLinkActive="bg-neutral-surface text-ink"
-            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            Map
-          </a>
-          <a
-            routerLink="/import"
-            routerLinkActive="bg-neutral-surface text-ink"
-            class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-          >
-            Import
-          </a>
-        </nav>
+        @if (auth.user()) {
+          <nav class="flex gap-1">
+            <a
+              routerLink="/dashboard"
+              routerLinkActive="bg-neutral-surface text-ink"
+              class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              Dashboard
+            </a>
+            <a
+              routerLink="/trips"
+              routerLinkActive="bg-neutral-surface text-ink"
+              class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              Trips
+            </a>
+            <a
+              routerLink="/analytics"
+              routerLinkActive="bg-neutral-surface text-ink"
+              class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              Analytics
+            </a>
+            <a
+              routerLink="/map"
+              routerLinkActive="bg-neutral-surface text-ink"
+              class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              Map
+            </a>
+            <a
+              routerLink="/import"
+              routerLinkActive="bg-neutral-surface text-ink"
+              class="rounded-control px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              Import
+            </a>
+          </nav>
+        }
       </div>
 
-      <button
-        type="button"
-        (click)="theme.toggle()"
-        class="rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
-      >
-        @if (theme.theme() === 'dark') {
-          ☀️ Light
-        } @else {
-          🌙 Dark
+      <div class="flex items-center gap-3">
+        @if (auth.user(); as user) {
+          <span class="text-sm text-ink-muted">{{ user.displayName }}</span>
+          <button
+            type="button"
+            (click)="logout()"
+            class="rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+          >
+            Log out
+          </button>
         }
-      </button>
+
+        <button
+          type="button"
+          (click)="theme.toggle()"
+          class="rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink"
+        >
+          @if (theme.theme() === 'dark') {
+            ☀️ Light
+          } @else {
+            🌙 Dark
+          }
+        </button>
+      </div>
     </div>
   </header>
 

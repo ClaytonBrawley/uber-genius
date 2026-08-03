@@ -1,0 +1,54 @@
+<section class="mx-auto mt-16 max-w-sm">
+  <h2 class="text-xl font-semibold tracking-tight text-ink">Log in</h2>
+  <p class="mt-1 text-sm text-ink-muted">Welcome back to Uber Genius.</p>
+
+  <form class="mt-6 rounded-card border border-line bg-surface p-6" (ngSubmit)="submit()">
+    <label class="block text-sm font-medium text-ink" for="email">Email</label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      required
+      autocomplete="email"
+      [(ngModel)]="email"
+      class="mt-1 w-full rounded-control border border-line bg-canvas px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+    />
+
+    <label class="mt-4 block text-sm font-medium text-ink" for="password">Password</label>
+    <input
+      id="password"
+      name="password"
+      type="password"
+      required
+      autocomplete="current-password"
+      [(ngModel)]="password"
+      class="mt-1 w-full rounded-control border border-line bg-canvas px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+    />
+
+    @if (error()) {
+      <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+    }
+
+    <button
+      type="submit"
+      [disabled]="submitting()"
+      class="mt-6 w-full rounded-control bg-accent px-4 py-2 text-sm font-medium text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Log in
+    </button>
+
+    <button
+      type="button"
+      (click)="viewDemo()"
+      [disabled]="submitting()"
+      class="mt-3 w-full rounded-control border border-line bg-surface px-4 py-2 text-sm text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      View demo
+    </button>
+  </form>
+
+  <p class="mt-4 text-center text-sm text-ink-muted">
+    Don't have an account?
+    <a routerLink="/signup" class="text-accent hover:underline">Sign up</a>
+  </p>
+</section>
