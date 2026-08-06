@@ -24,38 +24,66 @@ public static class TripSummaryEndpoints
             // ever charged) — including them here would dilute the per-trip/per-mile
             // averages with entries that aren't really "a trip" from an earnings standpoint.
             var userId = principal.GetUserId();
-            var completed = db.Trips.Where(t => t.UserId == userId && t.Status == "completed");
 
-            var aggregate = await completed
-                .GroupBy(t => 1)
-                .Select(g => new
-                {
-                    TotalTrips = g.Count(),
-                    TotalEarnings = g.Sum(t => t.Earnings),
-                    TotalMiles = g.Sum(t => t.DistanceMiles),
-                    // Request time (not pickup time) is the start boundary — pickup-to-dropoff
-                    // alone excludes the drive-to-pickup time and understates true active time.
-                    // Doesn't yet correct for back-to-back trips accepted before the previous
-                    // one ended (~47% of trips, confirmed against real data) — see the
-                    // follow-up plan for the overlap-corrected version.
-                    TotalDrivingMinutes = g.Sum(t => EF.Functions.DateDiffMinute(t.RequestedTimeUtc ?? t.StartTimeUtc, t.EndTimeUtc)),
-                })
-                .FirstOrDefaultAsync();
+            // Pulled into memory and folded in C# (trivial volume — a few thousand rows per
+            // user) rather than summed in SQL: driving time has to be overlap-corrected, since
+            // ~47% of completed trips (confirmed against real data) are accepted before the
+            // previous one ends, and a plain per-trip sum would double-count that overlap.
+            // Ordered by RequestedTimeUtc, the same field the fold below anchors on — every
+            // real completed trip has one (confirmed: 0 nulls across 2,346 trips), so no
+            // StartTimeUtc fallback here. A null would mean the source file had no request-time
+            // column at all, a real data-shape problem worth failing loudly on rather than
+            // silently substituting a different anchor for.
+            var orderedTrips = await db.Trips
+                .Where(t => t.UserId == userId && t.Status == "completed")
+                .OrderBy(t => t.RequestedTimeUtc)
+                .Select(t => new { t.Id, t.RequestedTimeUtc, t.EndTimeUtc, t.Earnings, t.DistanceMiles })
+                .ToListAsync();
 
-            if (aggregate is null || aggregate.TotalTrips == 0)
+            if (orderedTrips.Count == 0)
             {
                 return Results.Ok(new TripSummary(0, 0m, 0m, 0m, 0m, 0m, 0m));
             }
 
-            var totalDrivingHours = aggregate.TotalDrivingMinutes / 60m;
+            var totalEarnings = 0m;
+            var totalMiles = 0m;
+            var totalDrivingMinutes = 0.0;
+            DateTime? runningEnd = null;
+
+            foreach (var t in orderedTrips)
+            {
+                totalEarnings += t.Earnings;
+                totalMiles += t.DistanceMiles;
+
+                // Request time (not pickup time) is the start boundary — pickup-to-dropoff
+                // alone excludes the drive-to-pickup time and understates true active time.
+                // The effective start is clamped forward to the end of whatever's already
+                // been counted, so a trip accepted before the previous one ends only
+                // contributes its non-overlapping tail, never double-counted minutes.
+                var anchorStart = t.RequestedTimeUtc
+                    ?? throw new InvalidOperationException($"Trip {t.Id} has no RequestedTimeUtc.");
+                var effectiveStart = runningEnd.HasValue && runningEnd.Value > anchorStart ? runningEnd.Value : anchorStart;
+
+                if (t.EndTimeUtc > effectiveStart)
+                {
+                    totalDrivingMinutes += (t.EndTimeUtc - effectiveStart).TotalMinutes;
+                }
+
+                // A running max, not just the latest trip's end — guards a trip that's fully
+                // nested inside a longer one still in progress from pulling the boundary back.
+                runningEnd = runningEnd.HasValue && runningEnd.Value > t.EndTimeUtc ? runningEnd.Value : t.EndTimeUtc;
+            }
+
+            var totalDrivingHours = (decimal)totalDrivingMinutes / 60m;
+            var totalTrips = orderedTrips.Count;
 
             var summary = new TripSummary(
-                TotalTrips: aggregate.TotalTrips,
-                TotalEarnings: aggregate.TotalEarnings,
-                AverageEarningsPerTrip: aggregate.TotalEarnings / aggregate.TotalTrips,
-                TotalMiles: aggregate.TotalMiles,
-                AverageEarningsPerMile: aggregate.TotalMiles == 0 ? 0m : aggregate.TotalEarnings / aggregate.TotalMiles,
-                EstimatedHourlyEarnings: totalDrivingHours == 0 ? 0m : aggregate.TotalEarnings / totalDrivingHours,
+                TotalTrips: totalTrips,
+                TotalEarnings: totalEarnings,
+                AverageEarningsPerTrip: totalEarnings / totalTrips,
+                TotalMiles: totalMiles,
+                AverageEarningsPerMile: totalMiles == 0 ? 0m : totalEarnings / totalMiles,
+                EstimatedHourlyEarnings: totalDrivingHours == 0 ? 0m : totalEarnings / totalDrivingHours,
                 TotalDrivingHours: totalDrivingHours);
 
             return Results.Ok(summary);

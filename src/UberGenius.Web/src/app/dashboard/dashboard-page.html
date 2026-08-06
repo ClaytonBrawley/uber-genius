@@ -31,8 +31,8 @@
         <p class="text-sm text-ink-muted">Estimated hourly earnings (active time)</p>
         <p class="mt-1 text-3xl font-semibold text-ink">{{ formatCurrency(s.estimatedHourlyEarnings) }}/hr</p>
         <p class="mt-1 text-xs text-ink-muted">
-          Request time to drop-off. Doesn't yet correct for overlapping back-to-back trips or
-          offline waiting time — true online earnings will differ.
+          Request time to drop-off, overlap-corrected for back-to-back trips. Doesn't include
+          offline waiting time between trips — true online earnings will differ.
         </p>
       </div>
 
