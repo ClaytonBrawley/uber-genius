@@ -19,6 +19,7 @@ public static class TripCsvImporter
         ["RequestedTime"] = ["request_timestamp_utc", "trip requested", "request time"],
         ["City"] = ["city_name", "city"],
         ["Status"] = ["status"],
+        ["IsScheduledTrip"] = ["is_scheduled_trip", "is scheduled trip", "scheduled trip"],
         ["PickupLocation"] = ["pickup address", "pickup location", "origin", "pickup"],
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
         ["DistanceMiles"] = ["trip_distance_miles", "distance mi", "distance", "trip distance", "miles"],
@@ -99,6 +100,9 @@ public static class TripCsvImporter
             FareDistanceMiles = GetDecimal("FareDistanceMiles"),
             City = mapping.TryGetValue("City", out var cityHeader) ? csv.GetField(cityHeader) : null,
             Status = mapping.TryGetValue("Status", out var statusHeader) ? csv.GetField(statusHeader) : null,
+            IsScheduledTrip = mapping.TryGetValue("IsScheduledTrip", out var scheduledHeader)
+                ? CsvHeaderMapper.TryParseBool(csv.GetField(scheduledHeader))
+                : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)
                 ? csv.GetField(pickupHeader) ?? ""
                 : "",

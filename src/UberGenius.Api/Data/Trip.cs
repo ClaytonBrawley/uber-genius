@@ -27,6 +27,11 @@ public class Trip : IUserOwned
     public string? City { get; set; }
     public string? Status { get; set; }
 
+    // From Uber's own "is_scheduled_trip" export column — ground truth for whether this was
+    // booked ahead of time rather than requested on demand. Null means the source file didn't
+    // include the column at all, not "known not scheduled".
+    public bool? IsScheduledTrip { get; set; }
+
     public string PickupLocation { get; set; } = string.Empty;
     public string DropoffLocation { get; set; } = string.Empty;
 

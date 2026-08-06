@@ -49,8 +49,13 @@ public static class CsvHeaderMapper
             return null;
         }
 
-        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result) ||
-            DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out result))
+        // RoundtripKind, not None: a Z-suffixed or offset timestamp (e.g. "2025-06-27T13:00:07.000Z")
+        // must be taken as the UTC instant it already is, not converted to the machine's local
+        // zone — DateTimeStyles.None does the latter and silently shifts every such value by
+        // the local UTC offset. A plain, zone-less timestamp (the original export's format)
+        // still comes back Kind=Unspecified with its value untouched, exactly as before.
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result) ||
+            DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.RoundtripKind, out result))
         {
             return result;
         }
