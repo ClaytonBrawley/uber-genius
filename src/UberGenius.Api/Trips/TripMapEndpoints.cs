@@ -69,12 +69,14 @@ public static class TripMapEndpoints
                 return (e.Latitude, e.Longitude, best.delta);
             }
 
-            // Only trips starting within the coverage window have any chance of a nearby event.
+            // No Status filter, deliberately (see TripSummaryEndpoints.cs) — a cancelled trip
+            // still has a real pickup location worth showing if GPS caught it. Only trips
+            // starting within the coverage window have any chance of a nearby event.
             var windowStart = eventTimes[0];
             var windowEnd = eventTimes[^1];
 
             var trips = await db.Trips
-                .Where(t => t.UserId == userId && t.Status == "completed" && t.StartTimeUtc >= windowStart && t.StartTimeUtc <= windowEnd)
+                .Where(t => t.UserId == userId && t.StartTimeUtc >= windowStart && t.StartTimeUtc <= windowEnd)
                 .Select(t => new { t.Id, t.StartTimeUtc, t.EndTimeUtc, t.Earnings, t.City })
                 .ToListAsync();
 
