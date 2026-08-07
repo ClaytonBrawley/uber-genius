@@ -20,9 +20,12 @@ public static class TripSummaryEndpoints
     {
         app.MapGet("/api/trips/summary", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
-            // Cancelled trips have Earnings = 0 / DistanceMiles = 0 by design (no fare was
-            // ever charged) — including them here would dilute the per-trip/per-mile
-            // averages with entries that aren't really "a trip" from an earnings standpoint.
+            // No Status filter, deliberately: a cancelled trip can still carry a real matched
+            // cancellation fee (confirmed against real data — Status alone doesn't tell you
+            // whether money changed hands), and Trip.Earnings is already the right source of
+            // truth either way (0 when genuinely unpaid, the real amount otherwise). Filtering
+            // on Status == "completed" here previously undercounted all-time earnings by
+            // $297.02 across 56 trips.
             var userId = principal.GetUserId();
 
             // Pulled into memory and folded in C# (trivial volume — a few thousand rows per
@@ -35,7 +38,7 @@ public static class TripSummaryEndpoints
             // column at all, a real data-shape problem worth failing loudly on rather than
             // silently substituting a different anchor for.
             var orderedTrips = await db.Trips
-                .Where(t => t.UserId == userId && t.Status == "completed")
+                .Where(t => t.UserId == userId)
                 .OrderBy(t => t.RequestedTimeUtc)
                 .Select(t => new { t.Id, t.RequestedTimeUtc, t.EndTimeUtc, t.Earnings, t.DistanceMiles })
                 .ToListAsync();

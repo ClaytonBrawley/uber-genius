@@ -16,9 +16,12 @@ public static class TripEarningsByDayEndpoints
     {
         app.MapGet("/api/trips/earnings-points", async (ClaimsPrincipal principal, AppDbContext db) =>
         {
+            // No Status filter, deliberately — see TripSummaryEndpoints.cs for why: a cancelled
+            // trip can still carry a real matched cancellation fee, and Trip.Earnings is already
+            // 0 for genuinely unpaid trips either way.
             var userId = principal.GetUserId();
             var points = await db.Trips
-                .Where(t => t.UserId == userId && t.Status == "completed")
+                .Where(t => t.UserId == userId)
                 .Select(t => new TripEarningsPoint(t.StartTimeUtc, t.Earnings))
                 .ToListAsync();
 
