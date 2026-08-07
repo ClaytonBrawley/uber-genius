@@ -35,8 +35,11 @@ export class AuthService {
   }
 
   async signup(email: string, password: string, displayName: string): Promise<void> {
+    // Standard browser API, no permission prompt — tells us which real-world timezone the
+    // driver operates in without asking them a question they'd find odd.
+    const timeZoneId = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const res = await firstValueFrom(
-      this.http.post<AuthResponse>(`${API_BASE_URL}/api/auth/signup`, { email, password, displayName }),
+      this.http.post<AuthResponse>(`${API_BASE_URL}/api/auth/signup`, { email, password, displayName, timeZoneId }),
     );
     this.setSession(res);
   }

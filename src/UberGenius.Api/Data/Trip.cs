@@ -32,6 +32,13 @@ public class Trip : IUserOwned
     // include the column at all, not "known not scheduled".
     public bool? IsScheduledTrip { get; set; }
 
+    // From Uber's own "timezone" export column (IANA id, e.g. "America/Chicago") — the real
+    // timezone this specific trip happened in. Null for files that don't include the column
+    // (including every trip imported before this field existed); callers fall back to the
+    // owning User's TimeZoneId in that case. Exists per-trip, not just per-user, because a
+    // driver isn't guaranteed to operate in one timezone forever.
+    public string? TimeZoneId { get; set; }
+
     public string PickupLocation { get; set; } = string.Empty;
     public string DropoffLocation { get; set; } = string.Empty;
 

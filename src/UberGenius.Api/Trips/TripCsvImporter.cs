@@ -20,6 +20,7 @@ public static class TripCsvImporter
         ["City"] = ["city_name", "city"],
         ["Status"] = ["status"],
         ["IsScheduledTrip"] = ["is_scheduled_trip", "is scheduled trip", "scheduled trip"],
+        ["TimeZoneId"] = ["timezone", "time zone", "trip timezone"],
         ["PickupLocation"] = ["pickup address", "pickup location", "origin", "pickup"],
         ["DropoffLocation"] = ["dropoff address", "drop off address", "destination", "dropoff location", "dropoff"],
         ["DistanceMiles"] = ["trip_distance_miles", "distance mi", "distance", "trip distance", "miles"],
@@ -103,6 +104,7 @@ public static class TripCsvImporter
             IsScheduledTrip = mapping.TryGetValue("IsScheduledTrip", out var scheduledHeader)
                 ? CsvHeaderMapper.TryParseBool(csv.GetField(scheduledHeader))
                 : null,
+            TimeZoneId = mapping.TryGetValue("TimeZoneId", out var tzHeader) ? csv.GetField(tzHeader) : null,
             PickupLocation = mapping.TryGetValue("PickupLocation", out var pickupHeader)
                 ? csv.GetField(pickupHeader) ?? ""
                 : "",

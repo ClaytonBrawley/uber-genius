@@ -5,7 +5,7 @@ using UberGenius.Api.Data;
 
 namespace UberGenius.Api.Auth;
 
-public record SignupRequest(string Email, string Password, string DisplayName);
+public record SignupRequest(string Email, string Password, string DisplayName, string TimeZoneId);
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string Token, int Id, string Email, string DisplayName);
 public record MeResponse(int Id, string Email, string DisplayName);
@@ -32,11 +32,19 @@ public static class AuthEndpoints
                 return Results.BadRequest("Password must be at least 8 characters.");
             }
 
+            // Browser-supplied, so validated before trusting it — a bad value here would
+            // otherwise surface much later as a TimeZoneNotFoundException on the analytics page.
+            if (!TimeZoneInfo.TryFindSystemTimeZoneById(request.TimeZoneId, out _))
+            {
+                return Results.BadRequest("Unrecognized time zone.");
+            }
+
             var user = new User
             {
                 Email = email,
                 DisplayName = request.DisplayName.Trim(),
                 CreatedAtUtc = DateTime.UtcNow,
+                TimeZoneId = request.TimeZoneId,
             };
             user.PasswordHash = hasher.HashPassword(user, request.Password);
 
@@ -88,6 +96,9 @@ public static class AuthEndpoints
                     // verify against anything — a random unusable value is enough.
                     PasswordHash = Guid.NewGuid().ToString(),
                     CreatedAtUtc = DateTime.UtcNow,
+                    // No real trip data exists for this account, so the exact value is low
+                    // stakes — picked for consistency with the app's real historical data.
+                    TimeZoneId = "America/Chicago",
                 };
                 db.Users.Add(user);
                 try
