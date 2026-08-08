@@ -80,6 +80,15 @@ public static class ImportEndpoints
                 await db.SaveChangesAsync(); // persists Earnings/match-quality updates from the matcher
             }
 
+            // Separate from the fuzzy nearest-neighbor pass above: catches a payment that
+            // arrived for a trip matched in a past submission (a late tip, say), by exact
+            // TripUuid lookup rather than a time-window search.
+            if (paymentDedupe.NewItems.Count > 0)
+            {
+                await TripPaymentMatcher.ReattachLatePaymentsAsync(db, userId, paymentDedupe.NewItems);
+                await db.SaveChangesAsync();
+            }
+
             await transaction.CommitAsync();
 
             return Results.Ok(new ImportSubmitResult(

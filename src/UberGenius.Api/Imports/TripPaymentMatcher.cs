@@ -58,6 +58,52 @@ public static class TripPaymentMatcher
         return (candidateTrips, candidatePayments);
     }
 
+    // A payment can arrive well after its trip was already matched — e.g. a tip that posts
+    // days later. Its TripUuid already tells us exactly which trip it belongs to (every
+    // matched Trip records the Uuid it was matched against), so this is a direct lookup, not
+    // a fuzzy nearest-neighbor search — no risk of stealing/unwinding an already-settled
+    // match the way reopening it to LoadCandidatesAsync's tolerance search would be. Only
+    // covers trips that have a recorded MatchedPaymentTripUuid — a trip reclassified to
+    // Cancelled never got one (no payment was found at all at match time), so a late
+    // cancellation fee isn't caught by this; tracked separately as a known gap.
+    public static async Task<int> ReattachLatePaymentsAsync(AppDbContext db, int userId, List<TripPayment> candidatePayments)
+    {
+        var orphaned = candidatePayments.Where(p => p.MatchedTripId == null).ToList();
+        if (orphaned.Count == 0)
+        {
+            return 0;
+        }
+
+        var uuids = orphaned.Select(p => p.TripUuid).Distinct().ToList();
+        var existingMatches = await db.Trips
+            .Where(t => t.UserId == userId && t.MatchedPaymentTripUuid != null && uuids.Contains(t.MatchedPaymentTripUuid!))
+            .ToListAsync();
+        var tripByUuid = existingMatches.ToDictionary(t => t.MatchedPaymentTripUuid!);
+
+        var reattachedCount = 0;
+        foreach (var group in orphaned.GroupBy(p => p.TripUuid))
+        {
+            if (!tripByUuid.TryGetValue(group.Key, out var trip))
+            {
+                continue; // no existing match for this Uuid -- not this method's job
+            }
+
+            foreach (var payment in group)
+            {
+                payment.MatchedTripId = trip.Id;
+                reattachedCount++;
+            }
+
+            // Re-summed from every row with this Uuid, not just the new ones -- safer than
+            // incrementing, and cheap given a trip only ever has a handful of payment rows.
+            trip.Earnings = await db.TripPayments
+                .Where(p => p.UserId == userId && p.TripUuid == group.Key)
+                .SumAsync(p => p.LocalAmount);
+        }
+
+        return reattachedCount;
+    }
+
     // Payments' "Local Timestamp" (despite the name) lines up with Trips' UTC request
     // time almost exactly, not any local/dropoff time — confirmed against a full real
     // import (2354 trips): comparing against RequestedTimeUtc with these thresholds
